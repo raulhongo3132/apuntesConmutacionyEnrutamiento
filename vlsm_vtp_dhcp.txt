@@ -257,9 +257,47 @@
     10000110.11111111.01 00 0000.00000000
     134_____.255_____.64 __ ____.0_______
 
+    le sumaremos 4000, que es:
+    111110100000
 
+    pero visto de otra forma, puede ser
+    00000000.00000000.00001111.10100000
 
+    un número que sí podemos sumar a la ip antes desglosada:
 
+    10000110.11111111.01 00 0000.00000000
+    +
+    00000000.00000000.00 00 1111.10100000
+
+    Entonces, sumandolo quedaría:
+    10000110.11111111.01 00 1111.10100000
+
+    Ojo, solo tocamos los bit de la porción de red, por lo que los primeros 2 octetos (16 bits) pasan iguales:
+    134.255.
+
+    Pero en el 3er octeto veremos cambios, pues a
+    01000000
+
+    le sumamos
+    00001111
+
+    dando como resultado:
+    01001111
+
+    o sea:
+    .79.
+
+    y el último octeto, haciendo cuentas pasa de:
+    .00000000
+
+    a:
+    .10100000
+
+    o sea
+    .160
+
+    Reuniendo cada octeto obtenemos la IP específica:
+    134.255.79.160
 
 
 
