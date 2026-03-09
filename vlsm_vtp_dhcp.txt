@@ -240,7 +240,26 @@
 
     Ahora debemos calcular la IP específica. Esta es relativamente fácil. Tomas la IP global (IG) y le sumas el la cantidad de requerimientos.
 
-    Por ejemplo, si tenemos la IP 222.222.222.0/24 y con el requerimiento
+    Por ejemplo, si tenemos la IP global 222.222.222.0/24 con el requerimiento 200, a la IP le sumamos los 200:
+        222.222.222.  0
+    +     0.  0.  0.200
+
+    Dando como resultado:
+    222.222.222.200/24
+
+    Esta es una forma bastante sencilla de comprender la IP específica. Apliquemosla a nuestro ejemplo que hemos trabajado:
+
+    A nuestra IG -> 134.255.64.0 / 20 le sumaremos 4000. Esto suena contraintuitivo, recordemos que nuestro limite es 255 en cada octeto. Por lo tanto lo veremos de la siguiente forma:
+
+    A esta red (134.255.64.0/20)
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
+    ________.________.__ __ ____.________
+    10000110.11111111.01 00 0000.00000000
+    134_____.255_____.64 __ ____.0_______
+
+
+
+
 
 
 
