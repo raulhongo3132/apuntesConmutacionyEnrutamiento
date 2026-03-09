@@ -1,0 +1,186 @@
+1.- Leer y comprender la información proporcionada.
+    Nos otorgan la ip:
+    134.255.80.100/18
+    Y los siguientes requerimientos con sus respectivas vlan:
+
+    VLAN 10 - 4000
+    VLAN 20 - 3500
+    VLAN 30 - 2004
+    VLAN 40 - 777
+    VLAN 50 - 300
+    VLAN 60 - 150
+
+    De la IP otorgada, debemos identificar la red general (ojo, la red otorgada puede, o no, ser la ip global).
+2.- ¿Qué nos dice el '/18'?
+    Nos dice que su mascara es '/18', por lo tanto:
+    los primeros 18 bits <X> serán nuestra porción de red (la red);
+    los ultimos 14 bits <Y>, serán nuestra porción de host (donde habitan las IPs de nuestra red):
+
+    XXXXXXXX.XXXXXXXX.XXYYYYYY.YYYYYYYY
+
+    Sabemos que los bits de la porción de red no se tocan, por lo tanto los primeros dos octetos, al pertenecer a la porción de red, no serán modificados
+    XXXXXXXX.XXXXXXXX.XXYYYYYY.YYYYYYYY
+    ________.________.
+    10000110.11111111.
+    134_____.255_____.
+
+    Como pordemos observar, el tercer octeto tiene bits de porción de red como porción de host:
+    XXXXXXXX.XXXXXXXX.XX YYYYYY.YYYYYYYY
+                     .__ ______.
+                     .01 010000.
+                     .80 ______.
+    recuerda que los bits de porción de red no se tocan, pero los bits de porción de host pasarán a 0. Por lo tanto, pasaría de esto:
+    XXXXXXXX.XXXXXXXX.XX OOOOOO.00000000
+                     .__ ______.
+                     .01 010000.
+                     .80 ______.
+    a esto:
+    XXXXXXXX.XXXXXXXX.XX YYYYYY.YYYYYYYY
+                     .__ ______.
+                     .01 000000.
+                     .64 ______.
+    el último octeto, al pertenecer a la porción de host, pasaría de esto
+    XXXXXXXX.XXXXXXXX.XX YYYYYY.YYYYYYYY
+                               .________.
+                               .01100100.
+                               .100_____.
+    a esto:
+    XXXXXXXX.XXXXXXXX.XX YYYYYY.YYYYYYYY
+                               .________.
+                               .00000000.
+                               .0_______.
+
+    Por lo tanto, nuestra red global sería:
+    XXXXXXXX.XXXXXXXX.XX YYYYYY.YYYYYYYY
+    ________.________.__ ______.________
+    10000110.11111111.01 000000.00000000
+    134_____.255_____.64 ______.0_______
+
+    o sea, la red general:
+    134.255.64.0/18
+
+    Tambien podemos deducir que en la porción de host que de esta red:
+    YYYYYY.YYYYYYYY
+    ______.________
+    000000.00000000
+
+    Entonces podemos tener al menos 16,382 equipos, pues 2^14 son 16,384, menos:
+    - global (134.255.64.0)
+    XXXXXXXX.XXXXXXXX.XX YYYYYY.YYYYYYYY
+    ________.________.__ ______.________
+    10000110.11111111.01 000000.00000000
+    134_____.255_____.64 ______.0_______
+
+    - broadcast (134.255.127.255)
+    XXXXXXXX.XXXXXXXX.XX YYYYYY.YYYYYYYY
+    ________.________.__ ______.________
+    10000110.11111111.01 111111.11111111
+    134_____.255_____.12 7_____.255_____
+
+    logrando tener IPs desde 134.255.64.1 hasta 134.255.127.254, o sea 16,382 IPs.
+
+3.- Los requerimientos
+    Una vez obtenida la red global, podemos comenzar a trabajar con sus requerimientos. Nos dice los siguiente:
+
+    VLAN 10 - 4000
+    VLAN 20 - 3500
+    VLAN 30 - 2004
+    VLAN 40 - 777
+    VLAN 50 - 300
+    VLAN 60 - 150
+
+    Su orden en realidad no importa, el requrimiento de 40 equipos puede estár en la VLAN 60, 20 ó 30 y así cada uno. Por ejemplo:
+
+    VLAN 10 - 2004
+    VLAN 20 - 3500
+    VLAN 30 - 4000
+    VLAN 40 - 150
+    VLAN 50 - 300
+    VLAN 60 - 777
+
+    ó
+
+    VLAN 10 - 4000
+    VLAN 20 - 3500
+    VLAN 30 - 2004
+    VLAN 40 - 777
+    VLAN 50 - 300
+    VLAN 60 - 150
+
+    Esta información depende de lo solicitado por el ejercicio.
+
+    Pero, es importante recordar que para el subneteo por VLSM siempre comenzamos desde el más grande (4000) en forma descendente, como el ejemplo original:
+
+    VLAN 10 - 4000
+    VLAN 20 - 3500
+    VLAN 30 - 2004
+    VLAN 40 - 777
+    VLAN 50 - 300
+    VLAN 60 - 150
+
+4.- Trabajar con cada requrimiento
+    Ya lo tenemos ordenado, por lo tanto comenzaremos con el requerimiento 4000, nuestro punto de partida.
+4.1.- Determinar la red global
+    Ya lo tenemos ordenado, por lo tanto comenzaremos con el requerimiento 4000, nuestro punto de partida.
+    Recordemos que nuestra red es: '134.255.64.0/18', por lo tanto nuestra red global para la VLAN 10 de 4000 equipos sería
+
+    RG -> 134.255.64.0
+
+    Es la misma que la global 134.255.64.0/18, pero tendrá una mascara diferente.
+
+4.2.- Determinar la nueva mascara
+    Para sacar la nueva submascara debemos recordar la siguiente formula
+
+    (2^n) - 2 >= x
+
+    donde x es nuestro requerimiento y debemos encontrar n. Por lo tanto:
+    (2^n) - 2 >= 4000
+
+    Si tomamos n=10
+    2^10 = 1024
+
+    Pero 1024 - 2 no es >= 4000, entonces buscaremos otro número.
+
+    Si tomamos n=12
+    2^10 = 4096
+
+    Pero 4096 - 2 sí es >= 4000, entonces de este tamaño será nuestra porción de sub red, de 12 bits.
+
+    Dado que las IPs se componen de 32 bits (4 octetos, o sea 4 porciones de 8 bits, o sea 32 bits), los últimos 12 bits formarán nuestra porción de host (Z), donde caben los 4000 equipos.
+
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
+    ________.________.__ __ ____.________
+    10000110.11111111.01 00 0000.00000000
+    134_____.255_____.64 __ ____.0_______
+
+    Ojo, la porción de red sigue siendo 'X' (18 bits), la porción de subred (2 bits donde habitarán las subredes VLAN) se compone de 'Y', y 'Z' es la porción de host ( 12 bits, donde caben los 4000 equipos). Quedando así:
+
+    134.255.64.0/20
+
+    Recuerda, para determina la mascara /20 tomamos:
+    - 18 bits de red
+    - 2 bits de subred
+
+    sobrando:
+    - 12 bits, donde habitaran los 4000 equipos.
+
+    Dando como resultado 32 bits (18+2+12=32)
+
+4.3.- Broadcast
+
+
+
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
+    ________.________.__ __ ____.________
+    10000110.11111111.01 00 0000.00000000
+    134_____.255_____.64 __ ____.0_______
+
+
+
+
+
+
+
+
+
+
