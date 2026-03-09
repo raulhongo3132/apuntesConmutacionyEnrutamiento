@@ -59,7 +59,7 @@
     o sea, la red general:
     134.255.64.0/18
 
-    Tambien podemos deducir que en la porción de host que de esta red:
+    Tambien podemos deducir que la porción de host para esta red está compuesta de 14 bits (32 bits totales menos 18 bits de la mascara /18 es igual a 14 bits libres):
     YYYYYY.YYYYYYYY
     ______.________
     000000.00000000
@@ -76,6 +76,8 @@
     ________.________.__ ______.________
     10000110.11111111.01 111111.11111111
     134_____.255_____.12 7_____.255_____
+
+    * Más adelante trabajaremos con el broadcast en los requerimientos *
 
     logrando tener IPs desde 134.255.64.1 hasta 134.255.127.254, o sea 16,382 IPs.
 
@@ -167,20 +169,78 @@
     Dando como resultado 32 bits (18+2+12=32)
 
 4.3.- Broadcast
+    Ya determinamos que la red para el requerimiento de 4000 es:
 
+    134.255.64.0/20
 
+    o sea:
+
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ / 20
+    ________.________.__ __ ____.________ /20
+    10000110.11111111.01 00 0000.00000000 /20
+    134_____.255_____.64 __ ____.0_______ /20
+    134.255.64.0 / 20
+
+    Para determinar el broadcast debemos encender cada uno de los bits de la porción de host (Z), o sea:
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ / 20
+    ________.________.__ __ ____.________ /20
+    10000110.11111111.01 00 1111.11111111 /20
+    134_____.255_____.79 __ ____.255_____ /20
+    134.255.79.255 / 20
+
+    Recordemos, los primeros dos octetos (16 bits, no se tocarán), or lo tanto pasarán iguales
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
+    ________.________.
+    10000110.11111111.
+    134_____.255_____.
+
+    En el siguiente octeto, 2 bits aún pertenecen a la porcion de red (X) y 2 bits a la porcíon de subred (Y). Recuerda: 16 bits de de los primeros dos octetos y 2 bits del tercero (X) más 2 bits de la porción de subred (Y) suman 20 bits para la mascara /20, dejando 12 bits para la subred de 4000 dispositivos:
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
+                     .__ __ ____.________
+                     .01 00 0000.00000000
+                     .64 __ ____.0_______
+
+    Estos bits, los de red y subrer (X y Y) se mantendrán iguales, pero los de la porción de host (Z) se encenderán.
 
     XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
-    ________.________.__ __ ____.________
-    10000110.11111111.01 00 0000.00000000
-    134_____.255_____.64 __ ____.0_______
+                     .__ __ ____.________
+                     .01 00 1111.11111111
+                     .79 __ ____.255_____
 
+    Puedes notar que en el tercer octeto pasamos de 64 (01000000) a 79 (01001111).
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
+                     .__ __ ____.
+                     .01 00 1111.
+                     .79 __ ____.
 
+    Los primeros 4 bits (X y Y) no se tocaron, mientras que los últimos 4 se encendieron (Z), obteniendo los resultados mencionados, pues si a 01000000 (64) le sumas 00001111 (15) da como resultado 01001111 (79).
 
+    El último octeto, pasa de:
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
+                                .________
+                                .00000000
+                                .0_______
+    a esto:
+        XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
+                                    .________
+                                    .11111111
+                                    .255_____
 
+    ¿La razón? Porque encendimos todos los bits de la porción de host, dando como resultado el broadcast:
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ / 20
+    ________.________.__ __ ____.________ /20
+    10000110.11111111.01 00 1111.11111111 /20
+    134_____.255_____.79 __ ____.255_____ /20
+    134.255.79.255 / 20
 
+4.4.- IP específica
+    Ya tenemos los siguientes datos
+    IG -> 134.255.64.0 / 20
+    BC -> 134.255.79.255 / 20
 
+    Ahora debemos calcular la IP específica. Esta es relativamente fácil. Tomas la IP global (IG) y le sumas el la cantidad de requerimientos.
 
+    Por ejemplo, si tenemos la IP 222.222.222.0/24 y con el requerimiento
 
 
 
