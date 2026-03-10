@@ -1,0 +1,557 @@
+Switches, VLANs, protocolos VTP y DHCP
+
+1.- Preparando el entorno (desgloce de IPs)
+    En el archivo vlsm.txt se ilustró como subnetear con VLSM. En caso de existir alguna duda, regresar a ese documento.
+
+1.1.- Asumiendo que quedó claro ese instructivo, podemos traer los datos del ejemplo del archivo vlsm.txt:
+
+    IP GLOBAL --> 134.255.64.0 / 18
+
+    4000 - VLAN 10
+    IG --> 134.255.64.0 / 20
+    BC --> 134.255.79.255
+    IPE -> 134.255.79.160
+    MR --> 255.255.240.0
+
+    3500 - VLAN 20
+    IG --> 134.255.80.0 / 20
+    BC --> 134.255.95.255
+    IPE -> 134.255.93.185
+    MR --> 255.255.240.0
+
+    2004 - VLAN 30
+    IG --> 134.255.96.0 / 21
+    BC --> 134.255.103.255
+    IPE -> 134.255.103.212
+    MR --> 255.255.248.0
+
+    777 - VLAN 40
+    IG --> 134.255.104.0 / 22
+    BC --> 134.255.107.255
+    IPE -> 134.255.107.9
+    MR --> 255.255.252.0
+
+    300 - VLAN 50
+    IG --> 134.255.108.0 / 23
+    BC --> 134.255.109.255
+    IPE -> 134.255.109.44
+    MR --> 255.255.254.0
+
+    150 - VLAN 60
+    IG --> 134.255.110.0 / 24
+    BC --> 134.255.110.255
+    IPE -> 134.255.110.150
+    MR --> 255.255.255.0
+
+    Recuerda:
+    IG --> 134.255.110.0 / 24 (red global)
+    BC --> Brodcast (este no se utilizará en realidad)
+    IPE -> IP Específica
+    MR --> Mascara de Red
+
+    Ahora podemos trabajar con este protocolos
+
+1.1.- Preparando el entorno (cables y switches)
+    Para este primer conectaremos 4 switches 2960 y los conectaremos de la siguiene forma con el cable cooper cross-over (el negro punteado):
+
+    2960-0 -------------------- 2960-1
+                                  |
+                                  |
+                                  |
+                                  |
+    2960-3 -------------------- 2960-2
+
+    Conectaras:
+    2960-0 por su puerto GBE0/1 al 2960-1 por su puerto GBE0/2
+    2960-1 por su puerto GBE0/1 al 2960-2 por su puerto GBE0/2
+    2960-2 por su puerto GBE0/1 al 2960-3 por su puerto GBE0/2
+
+    *GBE0/1 ó GBE0/2 es el puerto GigabiteEthernet, cada switch tiene 2.
+
+    La siguiente información será útil, pues dirá las VLAN que poseerá cada switch:
+    2960-0 - VLAN: 10, 20, 30, 40, 50, 60
+    2960-1 - VLAN: 10, 20, 40, 50
+    2960-2 - VLAN: 10, 20, 30, 40, 50, 60
+    2960-3 - VLAN: 30, 40, 50, 60
+    Cada switch debe tener 4 puertos por VLAN (24 puertos FastEthernet tiene cada swtich)
+    Cada VLAN de cada Switch debe terner 2 equipos
+
+    De momento, el profesor así ha dado ejercicios. En caso de tener dudas del por qué es así el ejercicio, por qué cada switch tiene cada VLAN, pregunar al profesor. Seguramente respondera algo como "así son los requerimientos y varia por caso".
+
+    Lo importante es saber que sin importar las instrucciones, debemos comprender el porqué de cada linea o requerimiento e identificar si siquiera es posible lo que se solicita.
+
+    * Por ejemplo, los 2960-0 y 2960-2 alojarán 6 VLANs diferentes, por 4 puertos cada una a asignar, caben perfectamente en los 24 puertos disponibles
+
+2.- Protocolo VTP
+    En síntesis:
+    - VTP permite que varios switches compartan la misma base de datos de VLAN.
+    - Cuando se crea, modifica o elimina una VLAN en un switch configurado como servidor, el cambio se propaga automáticamente a los demás switches del mismo dominio VTP.
+    - Funciona a través de enlaces trunk (normalmente con IEEE 802.1Q).
+
+    Tranquilo, cada punto se acalará conforme configuremos los switches
+
+2.1.- Modos de operación
+    Este protocolo tiene 3 tipos de modos de operación:
+    - Server: crea, modifica y elimina VLAN; distribuye cambios.
+    - Client: recibe y aplica cambios, pero no puede crearlos.
+    - Transparent: no participa en la sincronización, pero reenvía los anuncios VTP.
+
+    Para efecto del siguiente ejercicio solo usaremos el modo server y el modo cliente. Tendremos uno en modo server (eligiremos el 2960-0, pero puede ser cualquiera o el que soliciten) y el resto modo client (2960-1, 2960-2, 2960-3).
+
+2.2.- Configurando el switch server (protocolo VTP)
+    Entraremos al CLI (Interfaz de Línea de Comandos, corroborar las siglas) del switch 2960-0, el switch server. Y lo comenzaremos a confurar:
+
+    ENABLE
+    CONFIGURE TERMINAL
+    HOSTNAME SW_SERVER
+
+    Explicación:
+
+    ENABLE ---------------------------- Entra al modo privilegiado del switch.
+    CONFIGURE TERMINAL ---------------- Permite entrar al modo de configuración global.
+    HOSTNAME SW_SERVER ---------------- Cambia el nombre del switch para identificarlo en la red.
+
+    Una vez en SW_SERVER(config) ya podemos configurar el protocolo VTP con los siguientes comandos:
+
+    VTP MODE SERVER
+    VTP DOMAIN ITIZ
+    VTP PASSWORD CISCO123
+    VTP VERSION 2
+
+    Explicación:
+
+    VTP MODE SERVER ------------------- Indica que el switch será servidor de VTP.
+    VTP DOMAIN ITIZ ------------------- Le daremos el DOMAIN ITIZ. El nombre puede ser cualquier cosa, pero todos los switches que quieran compartir VLAN deben tener exactamente el mismo VTP Domain.
+    VTP PASSWORD CISCO123 ------------ Le proporcionamos una contraseña para seguridad del protocolo VTP (no del switch, eso es aparte. Consultalo con la IA). Solo switches con la misma contraseña podrán intercambiar información de VLAN.
+    VTP VERSION 2 --------------------- E indicamos la versión del VTP, por default aquí viene con la 1 (*creo)
+
+2.3.- Configurando los switches client (protocolo VTP)
+    Como la configuración inicial del client es en exceso similar, vale la pena configurarlo inmediatamente para hablar sobre las diferencias.
+    Entramos a la interfaz CLI de cualquier switch (el 2960-1 para este ejemplo) y entramos al modo config:
+
+    ENABLE
+    CONFIGURE TERMINAL
+    HOSTNAME SW_CLIENT_1
+
+    Como podemos ver, el hostname ahora es SW_CLIENT_1, un cliente (los switches 2960-2 y 2960-3 serán SW_CLIENT_2 y SW_CLIENT_3 respectivamente)
+
+    VTP MODE CLIENT
+    VTP DOMAIN ITIZ
+    VTP PASSWORD CISCO123
+
+    Explicación:
+
+    VTP MODE CLIENT ------------------- Indica que el switch será cliente de VTP.
+    VTP DOMAIN ITIZ ------------------- Mismo DOMAIN, importante
+    VTP PASSWORD CISCO123 ------------- Misma contraseña para intercambiar información de VLAN
+
+    Ojo, en estos switches clientes no configuran el VTP VERSION 2, pues el servidor (swtich 2960-0) configura a los clientes.
+
+    La versión VTP normalmente se configura en el servidor. Los clientes pueden funcionar automáticamente si soportan esa versión, pero en redes reales se recomienda configurar la misma versión en todos los switches.
+
+    Nuestos swtiches pasaran de esto:
+
+    2960-0 -------------------- 2960-1
+                                  |
+                                  |
+                                  |
+                                  |
+    2960-3 -------------------- 2960-2
+
+    a esto:
+
+    SERVER -------------------- CLIENT1
+                                  |
+                                  |
+                                  |
+                                  |
+    CLIENT3 ------------------- CLIENT2
+
+2.4.- Configuración de enlaces TRUNK
+    Estos comandos irán en cada switch para configurar los puertos GBE0/X
+
+    INTERFACE RANGE GIGABITETHERNET0/1-2
+    SWITCHPORT MODE TRUNK
+    EXIT
+
+    Lo que significa
+
+    INTERFACE RANGE GIGABITETHERNET0/1-2 ---------- Entamos a la interfaz del puerto GBE0/1 y GBE0/2 con el RANGE
+    SWITCHPORT MODE TRUNK ------------------------- Elegimos el modo TRUNK
+    EXIT ------------------------------------------ Salimos
+
+2.5.- Configurando el switch server - parte 2
+    Recordemos que ya configuramos el protocolo VTP con los comandos:
+    VTP MODE SERVER
+    VTP DOMAIN ITIZ
+    VTP PASSWORD CISCO123
+    VTP VERSION 2
+
+    Ahora podemos continuar con lo que nos proporciona el protocolo VTP:
+
+    - VTP permite que varios switches compartan la misma base de datos de VLAN.
+    - Cuando se crea, modifica o elimina una VLAN en un switch configurado como servidor, el cambio se propaga automáticamente a los demás switches del mismo dominio VTP.
+
+    Entonces, como primer paso será crear las VLANs que usaremos (VLAN: 10, 20, 30, 40, 50 y 60) con los siguientes comandos:
+
+    VLAN 10
+    NAME VLAN10
+    EXIT
+
+    VLAN 20
+    NAME VLAN20
+    EXIT
+
+    VLAN 30
+    NAME VLAN30
+    EXIT
+
+    VLAN 40
+    NAME VLAN40
+    EXIT
+
+    VLAN 50
+    NAME VLAN50
+    EXIT
+
+    VLAN 60
+    NAME VLAN60
+    EXIT
+
+    Explicación:
+
+    VLAN 60 ----------------------- Creamos la VLAN 60
+    NAME VLAN60 ------------------- Asignamos un nombre, VLAN 60 es un ejemplo
+    EXIT -------------------------- Salimos de la creación de la VLAN
+
+    Con esto estarán creadas las VLAN. Podemos verificarlo con el comando:
+
+    SHOW VLAN BRIEF
+
+    Con esto, ya tenemos configurado nuestro swtich server (1) y nuestros client (3) en cuanto VTP y VLAN.
+
+2.6.- Asignar los puertos a las VLAN
+    Como se mencionó al principio, "cada switch debe tener 4 puertos por VLAN". Como el protocolo VTP, mediante el switch server, configura los clientes, ya podemos asignar a cada switch los puertos especificados.
+
+    Pera ilustrar esto, coiguraremos el switch 2960-0, el servidor, con las VLAN: 10, 20, 30, 40, 50, 60. Comenzaremos dandole 4 puertos a la VLAN 10. Para ello usaremos los comandos:
+
+    INTERFACE RANGE FASTETHERNET 0/1-4
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 10
+    DESCRIPTION ACCESO A LA VLAN 1O
+    EXIT
+
+    Que significa:
+
+    INTERFACE RANGE FASTETHERNET 0/1-4 ---- Entramos a la interfaz FastEthernet, desde la 0/1 hasta la 0/4, por eso el RANGE y la terminación 0/1-4. Si solo quisieramos asignar 1 puerto, se omite el range y se escribe 0/X, con X como el # del puerto a asignar (1-24)
+    SWITCHPORT MODE ACCESS ---------------- Indicamos que los puertos estás en modo acceso
+    SWITCHPORT ACCESS VLAN 10 ------------- Indicamos que le daremos acceso a los puertos a la VLAN que queramos, en este caso la 10
+    DESCRIPTION ACCESO A LA VLAN 1O ------- Agregamos una descripción coqueta
+    EXIT ---------------------------------- Salimos
+
+    Una vez hecho esto, podemos continuar con la asignación de los siguientes puertos.
+
+    Imaginemos que solo queremos asignar 3 puertos (solo es un ejemplo, pues el ejercicio decía que 4) a la VLAN 20, hariamos lo siguiente:
+    INTERFACE RANGE FASTETHERNET 0/5-7
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 10
+    DESCRIPTION ACCESO A LA VLAN 1O
+    EXIT
+
+    Lo que cambió:
+
+    INTERFACE RANGE FASTETHERNET 0/5-7 ------------ Ojo, usaremos el rango de puertos 0/5-7 (puerto 0/5, 0/6 y 0/7, con un total de 3 puertos), pues los puertos rango 0/1-4 ya son usados para la VLAN 10.
+    SWITCHPORT ACCESS VLAN 20 --------------------- Ahora trabajaremos con la VLAN 20
+    DESCRIPTION ACCESO A LA VLAN 2O --------------- La descripción también cambió
+
+    El resto de comandos de configuración es igual.
+
+    Para completar el ejercicio, los comandos del switch server (SW_SERVER - 2960-0 - VLAN: 10, 20, 30, 40, 50, 60) sería:
+
+    INTERFACE RANGE FASTETHERNET 0/1-4
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 10
+    DESCRIPTION ACCESO A LA VLAN 1O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/5-8
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 20
+    DESCRIPTION ACCESO A LA VLAN 2O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/9-12
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 30
+    DESCRIPTION ACCESO A LA VLAN 3O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/13-16
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 40
+    DESCRIPTION ACCESO A LA VLAN 4O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/17-20
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 50
+    DESCRIPTION ACCESO A LA VLAN 5O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/21-24
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 60
+    DESCRIPTION ACCESO A LA VLAN 6O
+    EXIT
+
+    Los comandos del SW_CLIENT_1 (2960-1 - VLAN: 10, 20, 40, 50)
+
+    INTERFACE RANGE FASTETHERNET 0/1-4
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 10
+    DESCRIPTION ACCESO A LA VLAN 1O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/5-8
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 20
+    DESCRIPTION ACCESO A LA VLAN 2O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/9-12
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 40
+    DESCRIPTION ACCESO A LA VLAN 4O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/13-16
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 50
+    DESCRIPTION ACCESO A LA VLAN 5O
+    EXIT
+
+    Los comandos del SW_CLIENT_2 (2960-2 - VLAN: 10, 20, 30, 40, 50, 60)
+
+    INTERFACE RANGE FASTETHERNET 0/1-4
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 10
+    DESCRIPTION ACCESO A LA VLAN 1O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/5-8
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 20
+    DESCRIPTION ACCESO A LA VLAN 2O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/9-12
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 30
+    DESCRIPTION ACCESO A LA VLAN 3O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/13-16
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 40
+    DESCRIPTION ACCESO A LA VLAN 4O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/17-20
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 50
+    DESCRIPTION ACCESO A LA VLAN 5O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/21-24
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 60
+    DESCRIPTION ACCESO A LA VLAN 6O
+    EXIT
+
+    Y los comandos del SW_CLIENT_3 (2960-3 - VLAN: 30, 40, 50, 60)
+
+    INTERFACE RANGE FASTETHERNET 0/1-4
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 30
+    DESCRIPTION ACCESO A LA VLAN 3O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/5-8
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 40
+    DESCRIPTION ACCESO A LA VLAN 4O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/9-12
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 50
+    DESCRIPTION ACCESO A LA VLAN 5O
+    EXIT
+
+    INTERFACE RANGE FASTETHERNET 0/13-16
+    SWITCHPORT MODE ACCESS
+    SWITCHPORT ACCESS VLAN 60
+    DESCRIPTION ACCESO A LA VLAN 6O
+    EXIT
+
+    Finalmente tenémos los puertos de cada switch deacuerdo a los requerimientos dados. Puedes usar el siguiente comando para corroborar:
+
+    SHOW RUNNING-CONFIG
+
+2.7.- Configuración del servidor DHCP
+    Esto se aplicaría en el switch que actúe como servidor (por ejemplo el 2960-0, SW-SERVER que configuraste como VTP server) usando Dynamic Host Configuration Protocol (DHCP). Estos son los comandos:
+
+    ENABLE
+    CONFIGURE TERMINAL
+
+    Para este ejemplo usarmos la siguiente información de la VLAN 10:
+
+    4000 - VLAN 10
+    IG --> 134.255.64.0 / 20
+    IPE -> 134.255.79.160
+    MR --> 255.255.240.0
+
+    Entonces los comandos quedaría:
+
+    IP DHCP EXCLUDED-ADDRESS 134.255.79.160
+    IP DHCP POOL VLAN_10
+    NETWORK 134.255.64.0 255.255.240.0
+    DEFAULT-ROUTER 134.255.79.160
+    DNS-SERVER 20.0.0.2
+    OPTION 150 IP 134.255.79.160
+    EXIT
+
+    INTERFACE VLAN 10
+    IP ADDRESS 134.255.79.160 255.255.240.0
+    NO SHUTDOWN
+    EXIT
+
+    Lo quee significa que:
+
+    IP DHCP EXCLUDED-ADDRESS 134.255.79.160 --- Exclimos la IP Específica, pues esta funciona como Default Gateway
+    IP DHCP POOL VLAN_10 ---------------------- Indicamos que la VLAN 10 usará el protocolo DHCP
+    NETWORK 134.255.64.0 255.255.240.0 -------- Asignamos la IP global y su mascara
+    DEFAULT-ROUTER 134.255.79.160 ------------- Asignamos la IP especifica como default Gateway
+    DNS-SERVER 20.0.0.2 ----------------------- Indica el servidor DNS que recibirán los clientes DHCP. Es un ejemplo (pregunar en clase)
+    OPTION 150 IP 134.255.79.160 -------------- Define la opción 150 del protocolo DHCP. Esta opción normalmente se usa para: servidor TFTP, telefonía IP (VoIP)
+    EXIT -------------------------------------- Salir
+
+    INTERFACE VLAN 10 ------------------------- Entamos a la interfaz de la VLAN 10
+    IP ADDRESS 134.255.79.160 255.255.240.0 --- Le asignamos la IP especifica, misma que configuramos con DEFAULT-ROUTER 134.255.79.160 con su mascara de red que es /20
+    NO SHUTDOWN ------------------------------- Activa la interfaz.
+    EXIT -------------------------------------- Salir
+
+    La configuración cambia deacuerdo de la VLAN que ya hememos especificado desde el principio. La configuración completa queda:
+
+    ENABLE
+    CONFIGURE TERMINAL
+
+    IP DHCP EXCLUDED-ADDRESS 134.255.79.160
+
+    IP DHCP POOL VLAN_10
+    NETWORK 134.255.64.0 255.255.240.0
+    DEFAULT-ROUTER 134.255.79.160
+    DNS-SERVER 20.0.0.2
+    OPTION 150 IP 134.255.79.160
+    EXIT
+
+    INTERFACE VLAN 10
+    IP ADDRESS 134.255.79.160 255.255.240.0
+    NO SHUTDOWN
+    EXIT
+
+    IP DHCP EXCLUDED-ADDRESS 134.255.93.185
+
+    IP DHCP POOL VLAN_20
+    NETWORK 134.255.80.0 255.255.240.0
+    DEFAULT-ROUTER 134.255.93.185
+    DNS-SERVER 20.0.0.2
+    OPTION 150 IP 134.255.93.185
+    EXIT
+
+    INTERFACE VLAN 20
+    IP ADDRESS 134.255.93.185 255.255.240.0
+    NO SHUTDOWN
+    EXIT
+
+    IP DHCP EXCLUDED-ADDRESS 134.255.103.212
+
+    IP DHCP POOL VLAN_30
+    NETWORK 134.255.96.0 255.255.248.0
+    DEFAULT-ROUTER 134.255.103.212
+    DNS-SERVER 20.0.0.2
+    OPTION 150 IP 134.255.103.212
+    EXIT
+
+    INTERFACE VLAN 30
+    IP ADDRESS 134.255.103.212 255.255.248.0
+    NO SHUTDOWN
+    EXIT
+
+    IP DHCP EXCLUDED-ADDRESS 134.255.107.9
+
+    IP DHCP POOL VLAN_40
+    NETWORK 134.255.104.0 255.255.252.0
+    DEFAULT-ROUTER 134.255.107.9
+    DNS-SERVER 20.0.0.2
+    OPTION 150 IP 134.255.107.9
+    EXIT
+
+    INTERFACE VLAN 40
+    IP ADDRESS 134.255.107.9 255.255.252.0
+    NO SHUTDOWN
+    EXIT
+
+    IP DHCP EXCLUDED-ADDRESS 134.255.109.44
+
+    IP DHCP POOL VLAN_50
+    NETWORK 134.255.108.0 255.255.254.0
+    DEFAULT-ROUTER 134.255.109.44
+    DNS-SERVER 20.0.0.2
+    OPTION 150 IP 134.255.109.44
+    EXIT
+
+    INTERFACE VLAN 50
+    IP ADDRESS 134.255.109.44 255.255.254.0
+    NO SHUTDOWN
+    EXIT
+
+    IP DHCP EXCLUDED-ADDRESS 134.255.110.150
+
+    IP DHCP POOL VLAN_60
+    NETWORK 134.255.110.0 255.255.255.0
+    DEFAULT-ROUTER 134.255.110.150
+    DNS-SERVER 20.0.0.2
+    OPTION 150 IP 134.255.110.150
+    EXIT
+
+    INTERFACE VLAN 60
+    IP ADDRESS 134.255.110.150 255.255.255.0
+    NO SHUTDOWN
+    EXIT
+
+    Despues puedes comprobar la configuración con:
+
+    SHOW IP DHCP POOL
+    SHOW IP DHCP BINDING
+    SHOW IP INTERFACE BRIEF
+
+2.8.- Configurar equipos
+    Según lo solicitado, cada VLAN de cada Switch debe terner 2 equipos. Entonces, por ejemplo en el SW-SERVER tenemos que asignar 2 equipos por VLAN, DANDO COMO RESULTADO 12 equipos en 6 VLAN diferentes. Quedanso así
+
+    SW-SERVER - GBE0/1 Y GBE0/2 - 2 PC para la VLAN 10
+                GBE0/5 Y GBE0/6 - 2 PC para la VLAN 20
+                GBE0/9 Y GBE0/10 - 2 PC para la VLAN 30
+                GBE0/13 Y GBE0/14 - 2 PC para la VLAN 40
+                GBE0/17 Y GBE0/18 - 2 PC para la VLAN 50
+                GBE0/21 Y GBE0/22 - 2 PC para la VLAN 60
+
+    y así sucesivamente con cada VLAN por cada switch. Podemos conectar cada equipo con el cable negro (supongo es de RED)
+
+    Una vez conectadas las PC, Enetramos a la configuración de IP y seleccionamos DCHP.
+
+    Y listo, la configuración quedaría lista. Si no se configura automáticamente, algo hiciste mal.
+
+PD - Este ejercicio se encuentra hecho en CPT/switchesVTTPDHCP.pkt, en este mismo repositorio. Corrió a la primera.
+
+PD2 - Recuerda, como configuramos las VLAN, solo puedes enviar mensajes entre las PC de la misma VLAN (sin importar su switch). Para que no intentes enviar mensajes de una PC perteneciente a la VLAN 10 con otra de la VLAN 20.
