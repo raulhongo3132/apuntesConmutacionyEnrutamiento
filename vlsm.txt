@@ -1,3 +1,5 @@
+VLSM para noobs
+
 1.- Leer y comprender la información proporcionada.
     Nos otorgan la ip:
     134.255.80.100/18
@@ -16,15 +18,15 @@
     los primeros 18 bits <X> serán nuestra porción de red (la red);
     los ultimos 14 bits <Y>, serán nuestra porción de host (donde habitan las IPs de nuestra red):
 
-    XXXXXXXX.XXXXXXXX.XXYYYYYY.YYYYYYYY
+    XXXXXXXX.XXXXXXXX.XX YYYYYY.YYYYYYYY
 
     Sabemos que los bits de la porción de red no se tocan, por lo tanto los primeros dos octetos, al pertenecer a la porción de red, no serán modificados
-    XXXXXXXX.XXXXXXXX.XXYYYYYY.YYYYYYYY
+    XXXXXXXX.XXXXXXXX.XX YYYYYY.YYYYYYYY
     ________.________.
     10000110.11111111.
     134_____.255_____.
 
-    Como pordemos observar, el tercer octeto tiene bits de porción de red como porción de host:
+    Como podemos observar, el tercer octeto tiene bits de porción de red como porción de host:
     XXXXXXXX.XXXXXXXX.XX YYYYYY.YYYYYYYY
                      .__ ______.
                      .01 010000.
@@ -60,9 +62,9 @@
     134.255.64.0/18
 
     Tambien podemos deducir que la porción de host para esta red está compuesta de 14 bits (32 bits totales menos 18 bits de la mascara /18 es igual a 14 bits libres):
-    YYYYYY.YYYYYYYY
-    ______.________
-    000000.00000000
+    XXXXXXXX.XXXXXXXX.XX YYYYYY.YYYYYYYY
+                         ______.________
+                         000000.00000000
 
     Entonces podemos tener al menos 16,382 equipos, pues 2^14 son 16,384, menos:
     - global (134.255.64.0)
@@ -91,7 +93,7 @@
     VLAN 50 - 300
     VLAN 60 - 150
 
-    Su orden en realidad no importa, el requrimiento de 40 equipos puede estár en la VLAN 60, 20 ó 30 y así cada uno. Por ejemplo:
+    Su orden en realidad no importa, el requerimiento de 40 equipos puede estár en la VLAN 60, 20 ó 30 y así cada uno. Por ejemplo:
 
     VLAN 10 - 2004
     VLAN 20 - 3500
@@ -123,8 +125,7 @@
 4.- Trabajar con cada requrimiento
     Ya lo tenemos ordenado, por lo tanto comenzaremos con el requerimiento 4000, nuestro punto de partida.
 4.1.- Determinar la red global
-    Ya lo tenemos ordenado, por lo tanto comenzaremos con el requerimiento 4000, nuestro punto de partida.
-    Recordemos que nuestra red es: '134.255.64.0/18', por lo tanto nuestra red global para la VLAN 10 de 4000 equipos sería
+    Recordemos que nuestra red es: '134.255.64.0/18', por lo tanto nuestra red global para la VLAN 10 de 4000 equipos sería:
 
     RG -> 134.255.64.0
 
@@ -144,24 +145,26 @@
     Pero 1024 - 2 no es >= 4000, entonces buscaremos otro número.
 
     Si tomamos n=12
-    2^10 = 4096
+    2^12 = 4096
 
-    Pero 4096 - 2 sí es >= 4000, entonces de este tamaño será nuestra porción de sub red, de 12 bits.
+    En este caso 4096 - 2 sí es >= 4000, entonces de este tamaño será nuestra porción de sub red, de 12 bits.
 
-    Dado que las IPs se componen de 32 bits (4 octetos, o sea 4 porciones de 8 bits, o sea 32 bits), los últimos 12 bits formarán nuestra porción de host (Z), donde caben los 4000 equipos.
+    Dado que las IPs se componen de 32 bits (4 octetos, o sea 4 porciones de 8 bits, 4x8 bits son 32 bits), los últimos 12 bits formarán nuestra porción de host (Z), donde caben los 4000 equipos.
 
     XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
     ________.________.__ __ ____.________
     10000110.11111111.01 00 0000.00000000
     134_____.255_____.64 __ ____.0_______
 
-    Ojo, la porción de red sigue siendo 'X' (18 bits), la porción de subred (2 bits donde habitarán las subredes VLAN) se compone de 'Y', y 'Z' es la porción de host ( 12 bits, donde caben los 4000 equipos). Quedando así:
+    Ojo, la porción de red sigue siendo 'X' (18 bits), la porción de subred (2 bits donde habita esta subred para lqs 4000 IPs) se compone de 'Y', y 'Z' es la porción de host ( 12 bits, donde caben los 4000 equipos). Quedando así:
 
     134.255.64.0/20
 
     Recuerda, para determina la mascara /20 tomamos:
     - 18 bits de red
     - 2 bits de subred
+
+    -> 18 + 2 = 20 --> /20
 
     sobrando:
     - 12 bits, donde habitaran los 4000 equipos.
@@ -194,13 +197,13 @@
     10000110.11111111.
     134_____.255_____.
 
-    En el siguiente octeto, 2 bits aún pertenecen a la porcion de red (X) y 2 bits a la porcíon de subred (Y). Recuerda: 16 bits de de los primeros dos octetos y 2 bits del tercero (X) más 2 bits de la porción de subred (Y) suman 20 bits para la mascara /20, dejando 12 bits para la subred de 4000 dispositivos:
+    En el siguiente octeto, 2 bits aún pertenecen a la porcion de red (X) y 2 bits a la porcion de subred (Y). Recuerda: 16 bits de de los primeros dos octetos y 2 bits del tercero (X) más 2 bits de la porción de subred (Y) suman 20 bits para la mascara /20, dejando 12 bits para la subred de 4000 dispositivos:
     XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
                      .__ __ ____.________
                      .01 00 0000.00000000
                      .64 __ ____.0_______
 
-    Estos bits, los de red y subrer (X y Y) se mantendrán iguales, pero los de la porción de host (Z) se encenderán.
+    Estos bits, los de red y subred (X y Y) se mantendrán iguales, pero los de la porción de host (Z) se encenderán.
 
     XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
                      .__ __ ____.________
@@ -221,10 +224,10 @@
                                 .00000000
                                 .0_______
     a esto:
-        XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
-                                    .________
-                                    .11111111
-                                    .255_____
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
+                                .________
+                                .11111111
+                                .255_____
 
     ¿La razón? Porque encendimos todos los bits de la porción de host, dando como resultado el broadcast:
     XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ / 20
@@ -238,7 +241,7 @@
     IG -> 134.255.64.0 / 20
     BC -> 134.255.79.255 / 20
 
-    Ahora debemos calcular la IP específica. Esta es relativamente fácil. Tomas la IP global (IG) y le sumas el la cantidad de requerimientos.
+    Ahora debemos calcular la IP específica. Esta es relativamente fácil. Tomas la IP global (IG) y le sumas la cantidad de requerimientos.
 
     Por ejemplo, si tenemos la IP global 222.222.222.0/24 con el requerimiento 200, a la IP le sumamos los 200:
         222.222.222.  0
@@ -272,7 +275,7 @@
     Entonces, sumandolo quedaría:
     10000110.11111111.01 00 1111.10100000
 
-    Ojo, solo tocamos los bit de la porción de red, por lo que los primeros 2 octetos (16 bits) pasan iguales:
+    Ojo, solo tocamos los bit de la porción de host, por lo que los primeros 2 octetos (16 bits) pasan iguales:
     134.255.
 
     Pero en el 3er octeto veremos cambios, pues a
@@ -309,16 +312,225 @@
 
     Estas son relativamente sencillo obtenerlas. Las mascaras de red tambien se componen de 4 octetos de 8 bits
     XXXXXXXX.XXXXXXXX.XXXXXXXX.XXXXXXXX
+    11111111.11111111.11111111.00000000
 
     o vistos de otra forma en decimal:
-    X.X.X.X
+    255.255.255.0
 
+    Este ejemplo muestra una mascara /24, lo que significa que los primeros 24 bits están encendidos, mientras que los últimos 8 bits (para completar los 32 bits) apagados.
 
+    En los ejemplos que hemos trabajado hemos visto la mascara /18. Hagamos los octetos con los primeros 18 bits encendidos seguidos de 14 bits apagados:
+    11111111.11111111.11000000.00000000
 
+    o, pasandolo a decimal, sale:
+    255.255.192.0
 
+    Para el ejemplo del requerimiento de 4000 IPs que hemos desglozado determinamos la mascara /20. Esto significa que los primeros 20 bits estarían encendidos contra los 12 bits restantes:
+    11111111.11111111.11110000.00000000
 
+    o, pasandolo a decimal, sale:
+    255.255.240.0
 
+    Así podemos determinar cada mascara.
 
+4.6.- Todos los datos reunidos
+    Haciendo una recopilación, obtenemos los siguientes resultados
+    IG --> 134.255.64.0 / 20
+    BC --> 134.255.79.255
+    IPE -> 134.255.79.160
+    MR --> 255.255.240.0
 
+    Cada uno de estos datos nos ayudaran a configurar nuestros equipos.
 
+5.- ¿Y el resto de nuestros requrimientos?
+    Como ya hemos mencionado, en VLSM tenemos que comenzar desde el requerimiento más alto en forma descendente. Por lo tanto, de la siguiente lista de requerimientos:
 
+    VLAN 10 - 4000
+    VLAN 20 - 3500
+    VLAN 30 - 2004
+    VLAN 40 - 777
+    VLAN 50 - 300
+    VLAN 60 - 150
+
+    ya hemos obtenido la información para el requerimiento de 4000 IPs, siguiendo así el requerimiento de 3500 IPs.
+
+    Para este paso es importante recordar el broadcast del requerimiento anterior (el de 4000):
+
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ / 20
+    ________.________.__ __ ____.________ /20
+    10000110.11111111.01 00 1111.11111111 /20
+    134_____.255_____.79 __ ____.255_____ /20
+    134.255.79.255 / 20
+
+    A esta IP (broadcast anterior) le sumaremos 1, pues la IP que le sigue a este broadcast ya no pertenece a la subred trabajada en esa subred.
+
+    Veamos por qué: si a al broadcast anterior le sumamos 1 seria:
+
+    10000110.11111111.01 00 1111.11111111
+    +
+    00000000.00000000.00 00 0000.00000001
+
+    es igual a:
+    10000110.11111111.01 01 0000.00000000
+
+    Si prestamos atención al tercer octeto podemos ver que la porción de subred ha cambiado:
+
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ (bits de porción de red, subred y host)
+    10000110.11111111.01 00 1111.11111111 (broadcast anterior)
+    10000110.11111111.01 01 0000.00000000 (broadcast + 1)
+
+    Si prestas especial atención a la porción de subred (Y), los bits ya no son los mismos. Pasaron de 00 a 01, determinando una porción de red totalmente diferente. Ya no es la 00, ahora es la 01:
+    XXXXXXXX.XXXXXXXX.XX YY ZZZZ.ZZZZZZZZ
+                     .01 00 1111.
+                     .01 01 0000.
+
+    Esto es lo que llamamos salto. Pasamos de la subred anterior (la de los 4000)
+    10000110.11111111.01 00 0000.00000000
+    134_____.255_____.64 __ ____.0_______
+
+    a la nueva subred (para los 3500):
+    10000110.11111111.01 01 0000.00000000
+    134_____.255_____.80 __ ____.0_______
+
+    Dimos un salto de 16, de 64 a 80.
+
+    Dicho de otra forma:
+
+    256 - 240 = 16 → tamaño de bloque
+
+    Apartir de aquí debemos calcular la submascara y poder obtener cada dato que trabajamos en el punto 4:
+
+    IG -->
+    BC -->
+    IPE ->
+    MR -->
+
+    pero eso lo podemos obtener siguiendo cada paso.
+
+6.- Una vez finalizado, podemos decir que:
+
+    4000
+    IG --> 134.255.64.0 / 20
+    BC --> 134.255.79.255
+    IPE -> 134.255.79.160
+    MR --> 255.255.240.0
+
+    3500
+    IG --> 134.255.80.0 / 20
+    BC --> 134.255.95.255
+    IPE -> 134.255.93.185
+    MR --> 255.255.240.0
+
+    2004
+    IG --> 134.255.96.0 / 21
+    BC --> 134.255.103.255
+    IPE -> 134.255.103.212
+    MR --> 255.255.248.0
+
+    777
+    IG --> 134.255.104.0 / 22
+    BC --> 134.255.107.255
+    IPE -> 134.255.107.9
+    MR --> 255.255.252.0
+
+    300
+    IG --> 134.255.108.0 / 23
+    BC --> 134.255.109.255
+    IPE -> 134.255.109.44
+    MR --> 255.255.254.0
+
+    150
+    IG --> 134.255.110.0 / 24
+    BC --> 134.255.110.255
+    IPE -> 134.255.110.150
+    MR --> 255.255.255.0
+
+    Es probable que haya cometido un error, pero será tu responsabilidad descubrir si así fue.
+
+### Extra de la IA - Su resumen ###
+
+7.- Método rápido de VLSM (5 pasos)
+
+El método anterior explica todo el proceso a nivel binario, lo cual es excelente para comprender cómo funcionan las redes. Sin embargo, en la práctica muchos ingenieros utilizan un método rápido que permite resolver ejercicios de VLSM en pocos minutos sin convertir todo a binario.
+
+Este método se puede resumir en 5 pasos.
+
+7.1.- Ordenar los requerimientos
+
+Primero debemos ordenar los requerimientos de mayor a menor, pues siempre comenzamos asignando las redes más grandes.
+
+Ejemplo:
+
+VLAN 10 - 4000
+VLAN 20 - 3500
+VLAN 30 - 2004
+VLAN 40 - 777
+VLAN 50 - 300
+VLAN 60 - 150
+7.2.- Determinar el número de hosts necesarios
+
+Recordemos la fórmula:
+
+(2^n) - 2 ≥ hosts
+
+Donde n es el número de bits necesarios para hosts.
+
+Aplicándolo a cada requerimiento:
+
+Hosts	n	IPs totales	 Prefijo
+4000	12	4096	     /20
+3500	12	4096	     /20
+2004	11	2048	     /21
+777	    10	1024	     /22
+300	    9	512	         /23
+150	    8	256	         /24
+
+Esto nos permite saber qué máscara necesita cada red.
+
+7.3.- Comenzar desde la red base
+
+Nuestra red global es:
+
+134.255.64.0/18
+
+La primera red será la del mayor requerimiento:
+
+4000 hosts → /20
+
+Por lo tanto:
+
+Red:        134.255.64.0/20
+Broadcast:  134.255.79.255
+
+7.4.- Obtener la siguiente red
+
+La siguiente red siempre comienza en la IP siguiente al broadcast anterior.
+
+Ejemplo:
+
+Broadcast anterior:
+134.255.79.255
+
+La siguiente red comienza en:
+
+134.255.80.0
+
+Entonces:
+
+3500 hosts → /20
+Red:        134.255.80.0/20
+Broadcast:  134.255.95.255
+
+7.5.- Repetir el proceso
+
+Repetimos el mismo procedimiento con cada requerimiento:
+
+Hosts	Red	Prefijo	Broadcast
+4000	134.255.64.0	/20	134.255.79.255
+3500	134.255.80.0	/20	134.255.95.255
+2004	134.255.96.0	/21	134.255.103.255
+777	134.255.104.0	/22	134.255.107.255
+300	134.255.108.0	/23	134.255.109.255
+150	134.255.110.0	/24	134.255.110.255
+
+Cada nueva red comienza en el siguiente número disponible después del broadcast anterior.
