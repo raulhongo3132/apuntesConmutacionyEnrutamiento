@@ -1,0 +1,88 @@
+# 13 / 03 / 2026
+## Servidores
+
+SW
+
+enable
+configure terminal
+hostname SW_SERVER_1
+
+vtp mode server
+vtp domain ITIZ
+vtp password CISCO123
+vtp version 2
+
+
+vlan 5
+name VLAN5
+exit
+
+vlan 10
+name VLAN10
+exit
+
+interface range fastethernet 0/1-12
+switchport mode access
+switchport access vlan 5
+description ACCESO VLAN 5
+exit
+
+interface range fastethernet 0/13-24
+switchport mode access
+switchport access vlan 10
+description ACCESO VLAN 10
+exit
+
+interface gigabitethernet 0/1
+switchport mode trunk
+exit
+
+
+Router
+
+enable
+configure terminal
+hostname R_1
+
+interface fastethernet 0/0.5
+encapsulation dot1q 5
+ip address 192.168.0.254 255.255.255.0
+exit
+
+interface fastethernet 0/0.10
+encapsulation dot1q 10
+ip address 172.16.255.254 255.255.0.0
+exit
+
+interface fastethernet 0/0
+description ADMIN VLANS 5 Y 10
+no shutdown
+exit
+
+interface fastethernet 0/1
+description ADMIN SERVER_WEB
+IP ADDRESS 201.5.20.18 255.255.255.252
+no shutdown
+exit
+
+ip dhcp pool VLAN_5
+network 192.168.0.0 255.255.255.0
+default-router 172.16.0.254
+OPTION 150 IP 192.168.0.254
+dns-server 201.5.20.17
+exit
+
+ip dhcp pool VLAN_10
+network 172.16.0.0 255.255.0.0
+default-router 172.16.255.254
+dns-server 201.5.20.17
+OPTION 150 IP 172.16.255.254
+exiT
+
+ip dhcp pool VLAN_5
+dns-server 201.5.20.17
+exiT
+
+ip dhcp pool VLAN_10
+dns-server 201.5.20.17
+exiT

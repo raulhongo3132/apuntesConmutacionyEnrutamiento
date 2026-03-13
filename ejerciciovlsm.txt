@@ -1,0 +1,340 @@
+VLAN 
+2 - 3000
+3 - 50
+4 - 200
+5 - 520
+6 - 1888
+7 - 1666
+8 - 1414
+9 - 20
+
+VLAN (ORDEN AL CONTRARIO DE LAS MANECILLAS DEL RELOJ) 
+2, 4 - SW SERVER
+3, 6 - SW CLIENTE 1
+5, 7 - SW CLIENTE 2
+9, 8 - SW CLIENTE 3
+
+191.240.0.0 / 15
+
+3000 -> 191.240.0.0 / 20
+	191.240.11.184
+	255.255.240.0
+1888 -> 191.240.16.0 / 21
+	191.240.23.96
+	255.255.248.0
+1666 -> 191.240.24.0 / 21
+	191.240.30.130
+	255.255.248.0
+1414 -> 191.240.32.0 / 21
+	191.240.37.134
+	255.255.248.0
+520 -> 191.240.40.0 / 22
+	191.240.42.8
+	255.255.252.0
+200 -> 191.240.44.0 / 24
+	191.240.44.200
+	255.255.255.0
+50 -> 191.240.45.0 / 26
+	191.240.45.50
+	255.255.255.192
+20 -> 191.240.45.64 / 27
+	191.240.45.84
+	255.255.255.224
+
+
+
+ROUTERS
+
+ROUTER_1
+
+enable
+configure terminal
+hostname ROUTER_1
+
+interface serial 0/0/0
+clock rate 128000
+bandwidth 128
+description ENLACE AL ROUTER_2
+ip address 10.0.0.1 255.255.255.252
+no shutdown
+exit
+
+interface fastethernet 0/0
+description TRUNK A SWITCH
+no shutdown
+exit
+
+interface fastethernet 0/0.2
+encapsulation dot1q 2
+ip address 191.240.11.184 255.255.240.0
+description VLAN 2
+exit
+
+interface fastethernet 0/0.3
+encapsulation dot1q 3
+ip address 191.240.45.50 255.255.255.192
+description VLAN 3
+exit
+
+interface fastethernet 0/0.4
+encapsulation dot1q 4
+ip address 191.240.44.200 255.255.255.0
+description VLAN 4
+exit
+
+interface fastethernet 0/0.6
+encapsulation dot1q 6
+ip address 191.240.23.96 255.255.248.0
+description VLAN 6
+exit
+
+ip dhcp pool VLAN_2
+network 191.240.0.0 255.255.240.0
+default-router 191.240.11.184
+dns-server 8.8.8.8
+exit
+
+ip dhcp pool VLAN_3
+network 191.240.45.0 255.255.255.192
+default-router 191.240.45.50
+dns-server 8.8.8.8
+exit
+
+ip dhcp pool VLAN_4
+network 191.240.44.0 255.255.255.0
+default-router 191.240.44.200
+dns-server 8.8.8.8
+exit
+
+ip dhcp pool VLAN_6
+network 191.240.16.0 255.255.248.0
+default-router 191.240.23.96
+dns-server 8.8.8.8
+exit
+
+router ospf 12
+network 191.240.0.0 0.0.255.255 area 1
+network 10.0.0.0 0.0.0.3 area 1
+exit
+
+
+ROUTER_2
+
+enable
+configure terminal
+hostname ROUTER_2
+
+interface serial 0/0/0
+description ENLACE AL ROUTER_1
+ip address 10.0.0.2 255.255.255.252
+no shutdown
+exit
+
+interface fastethernet 0/0.5
+encapsulation dot1q 5
+ip address 191.240.42.8 255.255.252.0
+description VLAN 5
+exit
+
+interface fastethernet 0/0.7
+encapsulation dot1q 7
+ip address 191.240.30.130 255.255.248.0
+description VLAN 7
+exit
+
+interface fastethernet 0/0.8
+encapsulation dot1q 8
+ip address 191.240.37.134 255.255.248.0
+description VLAN 8
+exit
+
+interface fastethernet 0/0.9
+encapsulation dot1q 9
+ip address 191.240.45.84 255.255.255.224
+description VLAN 9
+exit
+
+ip dhcp pool VLAN_5
+network 191.240.40.0 255.255.252.0
+default-router 191.240.42.8
+dns-server 8.8.8.8
+exit
+
+ip dhcp pool VLAN_7
+network 191.240.24.0 255.255.248.0
+default-router 191.240.30.130
+dns-server 8.8.8.8
+exit
+
+ip dhcp pool VLAN_8
+network 191.240.32.0 255.255.248.0
+default-router 191.240.37.134
+dns-server 8.8.8.8
+exit
+
+ip dhcp pool VLAN_9
+network 191.240.45.64 255.255.255.224
+default-router 191.240.45.84
+dns-server 8.8.8.8
+exit
+
+router ospf 12
+network 10.0.0.0 0.0.0.3 area 1
+network 191.240.0.0 0.0.255.255 area 1
+exit
+
+interface fastethernet 0/0
+description TRUNK A SWITCH
+no shutdown
+exit
+
+SWITCHES
+
+SERVER
+
+enable
+configure terminal
+hostname SW_SERVER
+
+vtp mode server
+vtp domain ITIZ
+vtp password CISCO123
+vtp version 2
+
+
+vlan 2
+name VLAN2
+exit
+
+vlan 3
+name VLAN3
+exit
+
+vlan 4
+name VLAN4
+exit
+
+vlan 5
+name VLAN5
+exit
+
+vlan 6
+name VLAN6
+exit
+
+vlan 7
+name VLAN7
+exit
+
+vlan 8
+name VLAN8
+exit
+
+vlan 9
+name VLAN9
+exit
+
+interface range fastethernet 0/1-16
+switchport mode access
+switchport access vlan 2
+description ACCESO VLAN 2
+exit
+
+interface range fastethernet 0/17-24
+switchport mode access
+switchport access vlan 4
+description ACCESO VLAN 4
+exit
+
+interface gigabitethernet 0/1
+description TRUNK A ROUTER_1
+switchport mode trunk
+switchport trunk allowed vlan 2,3,4,5,6,7,8,9
+no shutdown
+exit
+
+clientes
+
+enable
+configure terminal
+hostname SW_CLIENTE_1
+
+vtp mode CLIENT
+vtp domain ITIZ
+vtp password CISCO123
+vtp version 2
+
+interface range fastethernet 0/1-16
+switchport mode access
+switchport access vlan 3
+description ACCESO VLAN 3
+exit
+
+interface range fastethernet 0/17-24
+switchport mode access
+switchport access vlan 6
+description ACCESO VLAN 6
+exit
+
+interface gigabitethernet 0/1
+description TRUNK A ROUTER_1
+switchport mode trunk
+switchport trunk allowed vlan 2,3,4,5,6,7,8,9
+no shutdown
+exit
+
+enable
+configure terminal
+hostname SW_CLIENTE_2
+
+vtp mode CLIENT
+vtp domain ITIZ
+vtp password CISCO123
+vtp version 2
+
+interface range fastethernet 0/1-16
+switchport mode access
+switchport access vlan 5
+description ACCESO VLAN 5
+exit
+
+interface range fastethernet 0/17-24
+switchport mode access
+switchport access vlan 7
+description ACCESO VLAN 7
+exit
+
+interface gigabitethernet 0/1
+description TRUNK A ROUTER_2
+switchport mode trunk
+switchport trunk allowed vlan 2,3,4,5,6,7,8,9
+no shutdown
+exit
+
+enable
+configure terminal
+hostname SW_CLIENTE_3
+
+vtp mode CLIENT
+vtp domain ITIZ
+vtp password CISCO123
+vtp version 2
+
+interface range fastethernet 0/1-16
+switchport mode access
+switchport access vlan 8
+description ACCESO VLAN 8
+exit
+
+interface range fastethernet 0/17-24
+switchport mode access
+switchport access vlan 9
+description ACCESO VLAN 9
+exit
+
+interface gigabitethernet 0/1
+description TRUNK A ROUTER_2
+switchport mode trunk
+switchport trunk allowed vlan 2,3,4,5,6,7,8,9
+no shutdown
+exit
